@@ -1,4 +1,46 @@
 #+title: Magic.
 
-Magic.
+Coś do postawienia na VPS. Używałoby API HN do monitorowania nowych tematów i komentarzy,
+filtrowania ich, i renderowania w formie strony (+ opcjonalnie pushover).
 
+Filtry, które mnie interesują
+- kosmos - filtrowanie topiców i komentarzy po keywordach, być może z logiką
+  - wszystko dotyczące spacex, asteroid, etc.
+- biotech - filtrowanie topiców i komentarzy po keywordach, być może z logiką
+  - biotech, nanotech, life extension
+- poszczególne osoby - łapanie wszystkich submissions tej osoby
+- idlewords talks
+
+ (also, filtry po domenie - np. ".*slatestarcodex.com")
+
+ Cel: używanie tego jako agregatora ZAMIAST kartkowania głównej. Co by tyle czasu na HN nie spędzać
+ w ramach FOMO.
+
+ Features:
+ - jakiś minimalny persistence, żeby zawartość nie była zależna od refreshu strony
+ - "oznacz wszystkie poniżej jako przeczytane" (albo powyżej?) (+ oznacz zaznaczone jako przeczytane)
+ - podgląd pełnej treści submission / komentarza, być może z highlightem co dopasowało się do wyników
+   (może nie mieć sensu w przypadku bardziej złożonych filtrów, ale then again, mogę dorzucić dodatkową
+   lambdę highlightującą w wynikach i utrzymywać korelację z filtrem ręcznie)
+ - bezpośrednie linki do danego itemu
+ - być może, grupowanie komentarzy po temacie, lub przynajmniej wyświetlanie nazwy tematu przy komentarzu, do którego
+   należy, + bezpośredni link do całego tematu
+ - OPCJONALNIE pushover notification jeśli aktywizuje się jakiś temat
+
+https://github.com/HackerNews/API
+
+Core algorytmu:
+#+BEGIN_SRC lisp
+  (defun process-all ()
+    (let ((top (get-max-id)))
+      (loop for item from last-processed to top
+         do (process-item item))
+      (setf last-processed top)))
+
+  (defun process-item (item)
+    (let ((details (fetch-details item)))
+      (loop for (group . filters) in groups-filters-alist
+         do (loop for filter in filters
+               do (when (apply filter details)
+                    (set-add item (set-for group)))))))
+#+END_SRC
